@@ -1,0 +1,73 @@
+---
+title: "convertCSVtoParquet"
+author: "Gigi, modified from Dan's code"
+date: "1/5/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+```
+
+
+
+This Rmd file converts CSV files to parquet databases using the arrow package. 
+
+SID files for 2016-2021
+
+```{r}
+state <- c("NY,AZ,FL")
+dest_par <- "C:/Users/zz325/hcup-sid/ParquetData/FL" 
+```
+
+```{r}
+all_files <- list.files("C:/Users/zz325/hcup-sid/SASData/FL/", pattern = "*.csv", full.names = TRUE)
+# readin colnames
+
+getcolnames <- function(x)colnames(fread(x,nrows = 1))
+
+mylist <- lapply(all_files,getcolnames)
+
+colnames_fl <- Reduce(intersect, mylist)
+
+#double()
+#string()
+#float()
+#int32()
+#https://www.cms.gov/Research-Statistics-Data-and-Systems/Files-for-Order/LimitedDataSets/Downloads/SAFldsDenomNov2009.pdf
+
+## the sas loading files use A to indicate invalid which will cause issues in reading csv into environment. Make all variable (about 200 columns) as string to avoid this issue first. When you need to process specific columns, you can change the data type in a later stage. 
+
+# csv_stream_sid <- open_dataset("C:/Users/zz325/hcup-sid/SASData/AZ", format = "csv")
+
+# chosen_schema <- schema(
+#   purrr::map(names(csv_stream_sid), ~Field$create(name = .x, type = string()))
+# )
+# 
+# csv_stream_sid <-open_dataset("C:/Users/zz325/hcup-sid/SASData/AZ", format = "csv", schema = chosen_schema)
+```
+
+```{r}
+## the order of select and collection does not seem to work in order
+FL_crossyears<- function(x)fread(x,select=colnames_fl)
+
+FL_data <- rbindlist(lapply(all_files,FL_crossyears))
+```
+
+
+Write the data to a parquet database
+```{r, eval=F}
+write_dataset(FL_data, dest_par, format = "parquet", 
+              max_rows_per_file=1000000L,
+              hive_style = TRUE,
+              existing_data_behavior = "overwrite")
+```
+
+```{r}
+remove(FL_data)
+```
+

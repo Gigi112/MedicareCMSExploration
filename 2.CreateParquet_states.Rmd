@@ -1,0 +1,58 @@
+---
+title: "2.CreateParquet_clean"
+author: "Gigi, modified from Dan's code"
+date: "1/10/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+```
+
+This Rmd file converts CSV files to parquet databases using the arrow package. 
+
+SID files for New York (2016-2019), Arizona (2016-2021), and Florida (2016-2020)
+
+## use lapply to run code for each state
+
+### list the states and creat a function for column names (this is to ensure we pull all shared columns across years)
+```{r}
+state <- c("NY","AZ","FL")
+
+getcolnames <- function(x)colnames(fread(x,nrows = 1))
+```
+
+## create a function for converting parquet
+```{r}
+create_parquet_state <- function(x){
+  # destination file location
+  dest_par <- paste0("C:/Users/zz325/hcup-sid/ParquetData/",x,"_chgs")
+  
+  # original csv files location
+  all_files <- list.files(paste0("C:/Users/zz325/hcup-sid/SASData/",x,"_chgs"), pattern = "*.csv", full.names = TRUE)
+  
+  mylist <- lapply(all_files,getcolnames)
+
+  colnames_state <- Reduce(intersect, mylist)
+  state_crossyears<- function(x)fread(x,select=colnames_state)
+state_data <- rbindlist(lapply(all_files,state_crossyears))
+
+## Write the data to a parquet database
+
+write_dataset(state_data, dest_par, format = "parquet", 
+              max_rows_per_file=1000000L,
+              hive_style = TRUE,
+              existing_data_behavior = "overwrite")
+
+remove(state_data)
+}
+```
+
+```{r}
+lapply(state,create_parquet_state)
+```
+
