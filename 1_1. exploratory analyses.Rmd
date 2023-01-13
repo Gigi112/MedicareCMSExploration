@@ -1,0 +1,26 @@
+---
+title: "1_1. exploratory analysis"
+author: "Gigi, modified from Dan's code"
+date: "1/13/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arrow)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(duckdb)
+```
+
+## Read in the parquet database
+
+```{r} 
+pq_stream_denom <- open_dataset("C:/Users/zz325/hcup-sid/ParquetData/AZ", format = "parquet")
+```
+
+```{r}
+
+```
+
